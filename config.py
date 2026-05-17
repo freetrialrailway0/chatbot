@@ -33,12 +33,11 @@ gemini_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 groq_client   = Groq(api_key=os.environ["GROQ_API_KEY"])
 
 # ================================================================
-# TWILIO
+# GREEN API (WhatsApp)
 # ================================================================
-TWILIO_SID            = os.environ["TWILIO_ACCOUNT_SID"]
-TWILIO_TOKEN          = os.environ["TWILIO_AUTH_TOKEN"]
-TWILIO_SANDBOX_NUMBER = "whatsapp:+14155238886"
-YOUR_NUMBER           = os.environ["YOUR_NUMBER"]
+GREENAPI_ID_INSTANCE = os.environ["GREENAPI_ID_INSTANCE"]
+GREENAPI_API_TOKEN   = os.environ["GREENAPI_API_TOKEN"]
+YOUR_NUMBER          = os.environ["YOUR_NUMBER"]   # bare digits, e.g. 628572251xxxx
 
 # ================================================================
 # EXTERNAL APIS

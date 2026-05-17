@@ -2,9 +2,9 @@
 import logging
 from tracer import new_trace, get_trace_id
 
-import os, re
-from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse
+import os, re, json
+from flask import Flask, request, jsonify
+from greenapi_client import parse_incoming, send_message as greenapi_send
 
 # ── Startup sequence (order matters) ────────────────────────────
 from logging_setup import setup_logging
@@ -56,24 +56,35 @@ from tracer import new_trace, trace, logger, get_trace_id
 @app.route("/webhook", methods=["POST"])
 def webhook():
     tid = new_trace()
-    logger.info(f"[{tid}] ▶ INCOMING: {request.form.get('Body', '').strip()[:80]}")
-    incoming = request.form.get("Body", "").strip()
-    lower    = incoming.lower()
-    resp     = MessagingResponse()
-    msg      = resp.message()
+
+    # Green API sends JSON; ignore non-message notifications silently
+    data = request.get_json(silent=True) or {}
+    type_webhook = data.get("typeWebhook", "")
+    if type_webhook != "incomingMessageReceived":
+        return jsonify({"status": "ignored"}), 200
+
+    sender, incoming = parse_incoming(data)
+    if not incoming:
+        return jsonify({"status": "no_text"}), 200
+
+    logger.info(f"[{tid}] ▶ INCOMING from {sender}: {incoming[:80]}")
+    lower = incoming.lower()
+
+    # Helper to send reply back to sender
+    def send_reply(text: str):
+        greenapi_send(sender, text)
 
     # ── Step 0a: Pending session-reset confirmation ──────────────
     if is_pending_reset():
         set_pending_reset(False)
         touch_last_active()
         yes_words = {"yes", "ya", "yep", "yup", "reset", "clear", "iya", "ok", "okay", "sure"}
-        no_words  = {"no", "nope", "tidak", "nggak", "ngga", "lanjut", "continue", "stay", "keep"}
         if any(w in lower for w in yes_words):
             clear_conv_history()
-            msg.body("🔄 Session reset! Fresh start — what's on your mind?")
+            send_reply("🔄 Session reset! Fresh start — what's on your mind?")
         else:
-            msg.body("👍 Continuing your previous session. What's up?")
-        return str(resp)
+            send_reply("👍 Continuing your previous session. What's up?")
+        return jsonify({"status": "ok"}), 200
 
     # ── Step 0b: Update last_active ──────────────────────────────
     touch_last_active()
@@ -84,8 +95,8 @@ def webhook():
         nums = re.findall(r"\d+", incoming)
         if nums:
             n = min(int(nums[0]), 50)
-        msg.body(f"🖥️ *Last {n} log lines:*\n\n{get_recent_logs(n)[-1400:]}")
-        return str(resp)
+        send_reply(f"🖥️ *Last {n} log lines:*\n\n{get_recent_logs(n)[-1400:]}")
+        return jsonify({"status": "ok"}), 200
 
     # ── Step 1: Classify intent ──────────────────────────────────
     classified = classify_intent(incoming)
@@ -262,8 +273,8 @@ def webhook():
         save_conv_turn("user",      incoming)
         save_conv_turn("assistant", reply_text)
 
-    msg.body(reply_text)
-    return str(resp)
+    send_reply(reply_text)
+    return jsonify({"status": "ok"}), 200
 
 # ================================================================
 # /logs — browser log viewer (auto-refreshes every 10s)

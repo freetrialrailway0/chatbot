@@ -1,7 +1,7 @@
 import sqlite3, datetime
 from config import (
     now_jkt, localize_jkt,
-    TWILIO_SID, TWILIO_TOKEN, TWILIO_SANDBOX_NUMBER, YOUR_NUMBER,
+    GREENAPI_ID_INSTANCE, GREENAPI_API_TOKEN, YOUR_NUMBER,
 )
 from google_auth import get_google_services
 from ai.groq_client import groq_complete
@@ -178,7 +178,6 @@ def delete_reminder(keyword: str) -> str:
 @trace
 def check_and_send_reminders():
     """Fire any due reminders via Twilio and mark them done."""
-    from twilio.rest import Client as TwilioClient
     now    = now_jkt()
     win_lo = (now - datetime.timedelta(seconds=30)).strftime("%Y-%m-%d %H:%M")
     win_hi = (now + datetime.timedelta(seconds=59)).strftime("%Y-%m-%d %H:%M")
@@ -188,13 +187,9 @@ def check_and_send_reminders():
         (win_lo, win_hi)
     ).fetchall()
     if rows:
-        twilio_client = TwilioClient(TWILIO_SID, TWILIO_TOKEN)
+        from greenapi_client import send_message as greenapi_send
         for row in rows:
-            twilio_client.messages.create(
-                from_=TWILIO_SANDBOX_NUMBER,
-                to=YOUR_NUMBER,
-                body=f"⏰ *Reminder:* {row[1]}",
-            )
+            greenapi_send(YOUR_NUMBER, f"⏰ *Reminder:* {row[1]}")
             conn.execute("UPDATE reminders SET done = 1 WHERE id = ?", (row[0],))
         conn.commit()
     conn.close()

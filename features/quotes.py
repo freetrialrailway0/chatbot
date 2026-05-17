@@ -1,7 +1,7 @@
 import requests
 from config import (
     API_NINJAS_KEY,
-    TWILIO_SID, TWILIO_TOKEN, TWILIO_SANDBOX_NUMBER, YOUR_NUMBER,
+    GREENAPI_ID_INSTANCE, GREENAPI_API_TOKEN, YOUR_NUMBER,
 )
 from tracer import trace
 
@@ -67,16 +67,11 @@ def generate_daily_quote(context: str = "") -> str:
 
 @trace
 def send_scheduled_quote(label: str):
-    """Send an auto-scheduled quote to YOUR_NUMBER via Twilio (called by scheduler)."""
-    from twilio.rest import Client as TwilioClient
+    """Send an auto-scheduled quote to YOUR_NUMBER via Green API (called by scheduler)."""
     try:
         body = generate_daily_quote()
-        twilio_client = TwilioClient(TWILIO_SID, TWILIO_TOKEN)
-        twilio_client.messages.create(
-            from_=TWILIO_SANDBOX_NUMBER,
-            to=YOUR_NUMBER,
-            body=body,
-        )
+        from greenapi_client import send_message as greenapi_send
+        greenapi_send(YOUR_NUMBER, body)
         print(f"[Quote scheduler] {label} quote sent successfully.")
     except Exception as e:
         print(f"[Quote scheduler] Failed to send {label} quote: {e}")
