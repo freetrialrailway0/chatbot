@@ -47,10 +47,10 @@ def parse_incoming(data: dict) -> tuple[str, str]:
     text   = ""
 
     try:
-        body         = data.get("body", {})
-        sender_data  = body.get("senderData", {})
+        # Green API sends senderData and messageData at the TOP LEVEL of the JSON body
+        sender_data  = data.get("senderData", {})
         sender       = sender_data.get("sender", "").replace("@c.us", "")
-        msg_data     = body.get("messageData", {})
+        msg_data     = data.get("messageData", {})
         type_message = msg_data.get("typeMessage", "")
 
         if type_message == "textMessage":

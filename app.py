@@ -60,10 +60,12 @@ def webhook():
     # Green API sends JSON; ignore non-message notifications silently
     data = request.get_json(silent=True) or {}
     type_webhook = data.get("typeWebhook", "")
+    logger.info(f"[{tid}] ▶ WEBHOOK type={type_webhook!r} keys={list(data.keys())}")
     if type_webhook != "incomingMessageReceived":
         return jsonify({"status": "ignored"}), 200
 
     sender, incoming = parse_incoming(data)
+    logger.info(f"[{tid}] ▶ PARSED sender={sender!r} text={incoming[:80]!r}")
     if not incoming:
         return jsonify({"status": "no_text"}), 200
 
