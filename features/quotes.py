@@ -32,10 +32,10 @@ _QUOTE_CATEGORY_MAP = {
     "berani":  "courage",
 }
 @trace
-def _fetch_ninja_quote(category: str = "") -> dict | None:
+def _fetch_ninja_quote(categories: str = "") -> dict | None:
     try:
         url    = "https://api.api-ninjas.com/v2/randomquotes"
-        params = {"category": category} if category else {}
+        params = {"category": categories} if categories else {}
         resp   = requests.get(url, headers={"X-Api-Key": API_NINJAS_KEY}, params=params, timeout=5)
         resp.raise_for_status()
         data = resp.json()
