@@ -1,5 +1,6 @@
 import re, json, calendar as _calendar
-from config import now_jkt, PAYROLL_DAY, FIXED_EXPENSES, VARIABLE_BUDGETS
+from config import now_jkt, PAYROLL_DAY
+from features.budget_config import get_fixed_expenses, get_variable_budgets
 from ai.groq_client import groq_complete
 from tracer import trace
 
@@ -13,8 +14,10 @@ def _parse_budget_input(user_input: str) -> dict | None:
     today = now.day
     month = now.strftime("%B")
     year  = now.year
-    fixed_names    = ", ".join(e["name"] for e in FIXED_EXPENSES)
-    variable_names = ", ".join(v["name"] for v in VARIABLE_BUDGETS)
+    fixed_expenses  = get_fixed_expenses()
+    variable_budgets = get_variable_budgets()
+    fixed_names    = ", ".join(e["name"] for e in fixed_expenses)
+    variable_names = ", ".join(v["name"] for v in variable_budgets)
 
     prompt = f"""You are a budget parser for a personal finance chatbot. Today is the {today}th of {month} {year}.
 
@@ -53,14 +56,16 @@ def _budget_interactive_prompt() -> str:
     now       = now_jkt()
     today     = now.day
     days_left = (PAYROLL_DAY - today) if today < PAYROLL_DAY else (31 - today + PAYROLL_DAY)
+    fixed_expenses   = get_fixed_expenses()
+    variable_budgets = get_variable_budgets()
     lines = [
         f"💰 *Budget Calculator* — {days_left} days until payday (25th)\n",
         "Please tell me:",
         "1️⃣ How much money do you have right now?",
         "2️⃣ Which fixed expenses have you already paid?",
-        f"   Options: {', '.join(e['name'] for e in FIXED_EXPENSES)}",
+        f"   Options: {', '.join(e['name'] for e in fixed_expenses)}",
         "3️⃣ How much have you spent from variable budgets?",
-        f"   Options: {', '.join(v['name'] for v in VARIABLE_BUDGETS)}",
+        f"   Options: {', '.join(v['name'] for v in variable_budgets)}",
         "4️⃣ Any conditional expenses still pending? (e.g. Internet)",
         "",
         "💡 *Example:*",
@@ -92,18 +97,20 @@ def calculate_budget(user_input: str) -> str:
     if not parsed or parsed.get("remaining_money") is None:
         return _budget_interactive_prompt()
 
+    fixed_expenses   = get_fixed_expenses()
+    variable_budgets = get_variable_budgets()
     remaining      = parsed.get("remaining_money", 0)
     paid_fixed     = [n.lower() for n in (parsed.get("paid_fixed") or [])]
     spent_variable = {k.lower(): v for k, v in (parsed.get("spent_variable") or {}).items()}
     pending_cond   = [n.lower() for n in (parsed.get("pending_conditional") or [])]
 
     still_owed = [
-        exp for exp in FIXED_EXPENSES
+        exp for exp in fixed_expenses
         if not any(exp["name"].lower() in p or p in exp["name"].lower() for p in paid_fixed)
     ]
 
     remaining_var = []
-    for var in VARIABLE_BUDGETS:
+    for var in variable_budgets:
         name_lower = var["name"].lower()
         spent = 0
         for k, v in spent_variable.items():
@@ -115,7 +122,7 @@ def calculate_budget(user_input: str) -> str:
             remaining_var.append({"name": var["name"], "remaining": leftover, "spent": spent})
 
     pending_amounts = [
-        exp for exp in FIXED_EXPENSES
+        exp for exp in fixed_expenses
         if any(exp["name"].lower() in p or p in exp["name"].lower() for p in pending_cond)
         and not any(e["name"].lower() == exp["name"].lower() for e in still_owed)
     ]

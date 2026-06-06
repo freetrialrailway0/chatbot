@@ -24,6 +24,7 @@ Classify the user's message into exactly ONE of these intents:
   search_memory — ask about something that might be in their notes/ideas
   quote         — ask for a motivational/inspirational quote (e.g. "give me a quote", "motivate me", "quote of the day", "inspire me")
   budget        — CALCULATE or COMPUTE a budget with actual numbers: user provides a specific monetary amount and wants to know how much they can spend per day / sisa uang / berapa sisa per hari / survive until payday / kalkulasi budget / hitung uang sisa. Requires a specific monetary figure or explicit calculation request.
+  budget_config — VIEW or MANAGE the budget configuration (fixed expenses and variable budgets): add/remove/edit a fixed expense or variable budget category, or list/show/view the current budget setup. Examples: "show budget config", "add fixed expense Gym 200000 due 1", "remove variable Laundry", "edit fixed Internet to 175000", "tambah variable budget Gym 150000", "hapus fixed House Maintenance", "lihat budget config".
   delete_note   — DELETE or REMOVE a saved note by number or keyword (e.g. "delete note 2", "hapus note fix the logs")
   edit_note     — EDIT or UPDATE the content of a saved note (e.g. "edit note 2 to ...", "update note fix to ...")
   delete_idea   — DELETE or REMOVE a saved idea by number or keyword

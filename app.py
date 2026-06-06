@@ -32,7 +32,8 @@ from features.calendar  import (
 )
 from features.news    import get_news
 from features.quotes  import generate_daily_quote
-from features.budget  import calculate_budget
+from features.budget        import calculate_budget
+from features.budget_config import handle_budget_config
 from features.memory  import semantic_search
 
 # ── Flask app ────────────────────────────────────────────────────
@@ -214,6 +215,9 @@ def webhook():
 
     elif intent == "budget":
         reply_text = calculate_budget(incoming)
+
+    elif intent == "budget_config":
+        reply_text = handle_budget_config(incoming)
 
     elif intent == "delete_note":
         idx        = params.get("index")
